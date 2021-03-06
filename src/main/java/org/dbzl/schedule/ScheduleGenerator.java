@@ -15,14 +15,10 @@ public class ScheduleGenerator {
     private static final Random rng = new Random();
 
     public static void main(String [] args){
-        List<Team> northKai = new ArrayList<>();
-        northKaiTeams.forEach(team -> northKai.add(new Team(team, Division.NORTH_KAI)));
-        List<Team> eastKai = new ArrayList<>();
-        eastKaiTeams.forEach(team -> eastKai.add(new Team(team, Division.EAST_KAI)));
-        List<Team> westKai = new ArrayList<>();
-        westKaiTeams.forEach(team -> westKai.add(new Team(team, Division.WEST_KAI)));
-        List<Team> southKai = new ArrayList<>();
-        southKaiTeams.forEach(team -> southKai.add(new Team(team, Division.SOUTH_KAI)));
+        List<Team> northKai = northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList());
+        List<Team> eastKai =  eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList());
+        List<Team> westKai =  westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList());
+        List<Team> southKai = southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList());
 
         List<Team> allTeams = new ArrayList<>(northKai);
         allTeams.addAll(eastKai);
@@ -32,18 +28,17 @@ public class ScheduleGenerator {
         List<Match> mainSeasonMatches = buildAllPairings(allTeams);
         Map<Integer, List<Match>> seasonSchedule;
 
-        //basically - keep trying till it works.
+        //basically - keep trying till it works. on my computer, it took < ~10 seconds.
+        //mostly has to keep trying because of the rng.
         do{
             seasonSchedule = buildWeeklySchedule(mainSeasonMatches, allTeams);
         } while(seasonSchedule.entrySet().stream().anyMatch(week -> week.getValue().size() < 8));
 
         System.out.println("Schedule by team");
-
         for(Team team : allTeams){
             System.out.println(team.getName());
             for(Match divisionalMatch : team.getSchedule()){
-                System.out.println(divisionalMatch.toString() );
-
+                System.out.println(divisionalMatch.getFullDescription() );
             }
         }
 
@@ -53,9 +48,8 @@ public class ScheduleGenerator {
             for(Match match : week.getValue()){
                 System.out.print(match.getMatchDescription() +", ");
             }
-            System.out.println("");
+            System.out.println();
         }
-
 
     }
 
@@ -64,13 +58,15 @@ public class ScheduleGenerator {
         //need to make a copy of the list so that we can call this method multiple times
         List<Match> mainSeasonMatchesIdem = new ArrayList<>(mainSeasonMatches);
         Map<Integer, List<Match>> mainSeasonSchedule = new HashMap<>();
-        Predicate<Match> divisionalPredicate = match ->  match.isDivisionalMatch();
+        Predicate<Match> divisionalPredicate = Match::isDivisionalMatch;
 
         //to make things a little easier, pair the divisionals first, as these have the most stringent constraints
         for(int week : weeks){
             List<Match> matches = new ArrayList<>();
             mainSeasonSchedule.put(week, matches); //create the placeholder list here so it doesn't have to be created later
 
+            //this will need changing if we do proper divisional weeks - since this only works if divisionals only occur
+            //for 1 division at a time
             final Division kai = Division.isDivisionalWeekFor(week);
             if( kai == null){
                 continue; //no divisionals for the week, so no matches to schedule
@@ -145,7 +141,7 @@ public class ScheduleGenerator {
                         for(Team unpaired : unpairedTeams){
                             System.out.println(unpaired.getName());
                         }
-                        return mainSeasonSchedule;
+                        return mainSeasonSchedule; //return because once it fails to assign a match, the safeguards above will catch it.
                     }
                     Match match = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
 

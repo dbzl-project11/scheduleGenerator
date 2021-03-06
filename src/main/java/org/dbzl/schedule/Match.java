@@ -37,19 +37,19 @@ public class Match {
         return homeTeam.getDivision() == getAwayTeam().getDivision();
     }
 
-    public Division divisionalForKai(){
-        return isDivisionalMatch() ? homeTeam.getDivision() : null;
-    }
-
     public void setOpposingTeam(Team opposingTeam) {
         this.opposingTeam = opposingTeam;
     }
 
     public String getMatchDescription(){
 
-            return getHomeTeam().getName() + " vs " + getAwayTeam().getName();
+            return getHomeTeam().getName() + " vs " + getAwayTeam().getName() + (isDivisionalMatch() ? " " + homeTeam.getDivision().getAbbreviatedName() : "");
     }
 
+    public String getFullDescription(){
+
+        return week + " " + getHomeTeam().getName() + " vs " + getAwayTeam().getName() + (isDivisionalMatch() ? " " + homeTeam.getDivision().getAbbreviatedName() : "");
+    }
 
     @Override
     public String toString() {

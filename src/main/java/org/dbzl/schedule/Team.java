@@ -61,15 +61,6 @@ public class Team {
         schedule.add(match);
     }
 
-    public String getMatchDescription(int week){
-        Optional<Match> match = getSchedule().stream().filter(scheduledMatch -> scheduledMatch.getWeek() == week).findAny();
-        if(match.isEmpty()){
-            return "match not scheduled for " + name;
-        } else{
-            return match.get().getHomeTeam() + " vs " + match.get().getAwayTeam().getName();
-        }
-    }
-
 
     @Override
     public boolean equals(Object o) {

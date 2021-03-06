@@ -8,8 +8,8 @@ public enum Division {
     WEST_KAI("WK", 5, 9, 13),
     SOUTH_KAI("SK", 6, 10, 14);
 
-    private String abbreviatedName;
-    private int [] divisionalWeeks;
+    private final String abbreviatedName;
+    private final int [] divisionalWeeks;
 
     Division(String name, int ...  divisionalWeeks){
         this.abbreviatedName = name;
@@ -35,5 +35,9 @@ public enum Division {
 
     public int[] getDivisionalWeeks(){
         return divisionalWeeks;
+    }
+
+    public String getAbbreviatedName() {
+        return abbreviatedName;
     }
 }
