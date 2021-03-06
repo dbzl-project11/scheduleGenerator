@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 public class ScheduleGenerator {
 
+    //to adjust for new seasons, the only thing that *should* need to be done is rearrange the teams into the right Kais
+
     public static List<String> northKaiTeams = List.of("Buujins", "Budokai", "Androids", "Hybrids");
     public static List<String> eastKaiTeams = List.of("Namek", "GT", "Kaiju", "Earth Defenders");
     public static List<String> westKaiTeams = List.of("Royals", "Rugrats", "Cinema", "Resurrected Warriors");
@@ -65,39 +67,38 @@ public class ScheduleGenerator {
             List<Match> matches = new ArrayList<>();
             mainSeasonSchedule.put(week, matches); //create the placeholder list here so it doesn't have to be created later
 
-            //this will need changing if we do proper divisional weeks - since this only works if divisionals only occur
-            //for 1 division at a time
-            final Division kai = Division.isDivisionalWeekFor(week);
-            if( kai == null){
-                continue; //no divisionals for the week, so no matches to schedule
-            }
-            //should start with 6 divisional matches, pairing 2 each divisional week;
-            List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(match -> divisionalPredicate.test(match) &&
-                    match.getHomeTeam().getDivision() == kai).collect(Collectors.toList());
-            if(eligibleMatches.size()==2){
-                for(Match div : eligibleMatches){
-                    div.setWeek(week);
-                    matches.add(div);
-                    mainSeasonMatchesIdem.remove(div);
-
+            for(Division kai : Division.values()){
+                if(!kai.isDivisionalWeek(week)){
+                    continue;
                 }
-                continue;
-            }
-            List<Team> pairedTeams = new ArrayList<>();
-            Match firstDiv = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
-            firstDiv.setWeek(week);
-            matches.add(firstDiv);
-            pairedTeams.add(firstDiv.getHomeTeam());
-            pairedTeams.add(firstDiv.getAwayTeam());
+                //first divisional week, each divisional will have 6 possible matches, then 4 (for the 2nd) then 2 in the last one)
+                List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(match -> divisionalPredicate.test(match) &&
+                        match.getHomeTeam().getDivision() == kai).collect(Collectors.toList());
+                if(eligibleMatches.size()==2){
+                    for(Match div : eligibleMatches){
+                        div.setWeek(week);
+                        matches.add(div);
+                        mainSeasonMatchesIdem.remove(div);
 
-            eligibleMatches.remove(firstDiv);
-            eligibleMatches.removeIf(match -> pairedTeams.contains(match.getAwayTeam()) || pairedTeams.contains(match.getHomeTeam()));
-            assert eligibleMatches.size() == 1;
-            Match otherDiv = eligibleMatches.get(0);
-            otherDiv.setWeek(week);
-            matches.add(otherDiv);
-            mainSeasonMatchesIdem.remove(firstDiv);
-            mainSeasonMatchesIdem.remove(otherDiv);
+                    }
+                    continue;
+                }
+                List<Team> pairedTeams = new ArrayList<>();
+                Match firstDiv = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
+                firstDiv.setWeek(week);
+                matches.add(firstDiv);
+                pairedTeams.add(firstDiv.getHomeTeam());
+                pairedTeams.add(firstDiv.getAwayTeam());
+
+                eligibleMatches.remove(firstDiv);
+                eligibleMatches.removeIf(match -> pairedTeams.contains(match.getAwayTeam()) || pairedTeams.contains(match.getHomeTeam()));
+                assert eligibleMatches.size() == 1;
+                Match otherDiv = eligibleMatches.get(0);
+                otherDiv.setWeek(week);
+                matches.add(otherDiv);
+                mainSeasonMatchesIdem.remove(firstDiv);
+                mainSeasonMatchesIdem.remove(otherDiv);
+            }
         }
 
         for(Map.Entry<Integer, List<Match>> mainSeasonWeeks : mainSeasonSchedule.entrySet()){
@@ -127,7 +128,7 @@ public class ScheduleGenerator {
                                 }
                             }
                             weeklyMatches.removeIf(match -> !match.isDivisionalMatch());
-                            System.out.println("unable to completely assign week, restarting week");
+//                            System.out.println("unable to completely assign week, restarting week");
                             pairedTeams.clear();
                             for(Match match : weeklyMatches){
                                 pairedTeams.add(match.getHomeTeam());
@@ -135,12 +136,8 @@ public class ScheduleGenerator {
                             }
                             continue;
                         }
-                        System.out.println("Giving up on assigning week");
-                        List<Team> unpairedTeams = new ArrayList<>(allTeams);
-                        unpairedTeams.removeAll(pairedTeams);
-                        for(Team unpaired : unpairedTeams){
-                            System.out.println(unpaired.getName());
-                        }
+                        System.out.println("Giving up on assigning week, reseeding");
+
                         return mainSeasonSchedule; //return because once it fails to assign a match, the safeguards above will catch it.
                     }
                     Match match = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
