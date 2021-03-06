@@ -122,7 +122,7 @@ public class ScheduleGenerator {
 
                     List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(teamsAlreadyPaired).collect(Collectors.toList());
                     if(eligibleMatches.isEmpty() && weeklyMatches.size() < 8){
-                        if(clearCount < 20000){ //set to 10000 because that's what eventually worked
+                        if(clearCount < 200){ //if a given iteration is too hard, just restart from scratch
                             clearCount++;
                             for(Match match : weeklyMatches){
                                 if(!match.isDivisionalMatch()){
