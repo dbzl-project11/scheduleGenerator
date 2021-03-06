@@ -139,13 +139,13 @@ public class ScheduleGenerator {
                             }
                             continue;
                         }
-                        System.out.println("Giving up on assigning week and continuing");
+                        System.out.println("Giving up on assigning week");
                         List<Team> unpairedTeams = new ArrayList<>(allTeams);
                         unpairedTeams.removeAll(pairedTeams);
                         for(Team unpaired : unpairedTeams){
                             System.out.println(unpaired.getName());
                         }
-                        break;
+                        return mainSeasonSchedule;
                     }
                     Match match = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
 
