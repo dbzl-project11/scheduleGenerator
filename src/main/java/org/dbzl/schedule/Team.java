@@ -7,7 +7,6 @@ public class Team {
     private String name;
     private Division division;
     private List<Match> schedule;
-    private int homeGames =0;
 
     public Team(String name, Division division) {
         this.name = name;
@@ -49,16 +48,21 @@ public class Team {
         return getSchedule().stream().anyMatch(match ->  match.getWeek() == week);
     }
 
-    public void addHomeGame(){
-        homeGames++;
-    }
 
-    public int getHomeGames() {
-        return homeGames;
+    public long getHomeGames() {
+        return getSchedule().stream().filter(match -> match.getHomeTeam().getName().equals(getName())).count();
     }
 
     public void addMatchToSchedule(Match match){
         schedule.add(match);
+    }
+
+    public String printSchedule(){
+        StringBuilder builder = new StringBuilder();
+        builder.append("Schedule for: ").append(name).append('\n');
+        //use the getter so it's sorted
+        getSchedule().forEach(match -> builder.append(match.getFullDescription()).append('\n'));
+        return builder.toString();
     }
 
 
@@ -72,6 +76,6 @@ public class Team {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, division, schedule, homeGames);
+        return Objects.hash(name, division, schedule);
     }
 }

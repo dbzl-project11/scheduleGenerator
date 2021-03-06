@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 public class ScheduleGenerator {
 
     //to adjust for new seasons, the only thing that *should* need to be done is rearrange the teams into the right Kais
-
     public static List<String> northKaiTeams = List.of("Buujins", "Budokai", "Androids", "Hybrids");
     public static List<String> eastKaiTeams = List.of("Namek", "GT", "Kaiju", "Earth Defenders");
     public static List<String> westKaiTeams = List.of("Royals", "Rugrats", "Cinema", "Resurrected Warriors");
@@ -17,45 +16,34 @@ public class ScheduleGenerator {
     private static final Random rng = new Random();
 
     public static void main(String [] args){
-        List<Team> northKai = northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList());
-        List<Team> eastKai =  eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList());
-        List<Team> westKai =  westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList());
-        List<Team> southKai = southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList());
 
-        List<Team> allTeams = new ArrayList<>(northKai);
-        allTeams.addAll(eastKai);
-        allTeams.addAll(westKai);
-        allTeams.addAll(southKai);
+        List<Team> allTeams = northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList());
+        allTeams.addAll(eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList()));
+        allTeams.addAll( westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList()));
+        allTeams.addAll(southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList()));
 
         List<Match> mainSeasonMatches = buildAllPairings(allTeams);
         Map<Integer, List<Match>> seasonSchedule;
 
-        //basically - keep trying till it works. on my computer, it took < ~10 seconds.
-        //mostly has to keep trying because of the rng.
+        //basically - keep trying till it works. locally, it took < ~10 seconds to generate a full schedule.
+        //the retry is mostly caused by the rng trying to work with the scheduling constraints.
         do{
-            seasonSchedule = buildWeeklySchedule(mainSeasonMatches, allTeams);
+            seasonSchedule = buildWeeklySchedule(mainSeasonMatches);
         } while(seasonSchedule.entrySet().stream().anyMatch(week -> week.getValue().size() < 8));
 
         System.out.println("Schedule by team");
-        for(Team team : allTeams){
-            System.out.println(team.getName());
-            for(Match divisionalMatch : team.getSchedule()){
-                System.out.println(divisionalMatch.getFullDescription() );
-            }
-        }
+        allTeams.forEach(team -> System.out.println(team.printSchedule()));
 
         System.out.println("Schedule by week");
-        for(Map.Entry<Integer, List<Match>> week : seasonSchedule.entrySet()){
-            System.out.println("Week " + week.getKey() + " paired " + week.getValue().size() + " matches");
-            for(Match match : week.getValue()){
-                System.out.print(match.getMatchDescription() +", ");
-            }
+        seasonSchedule.forEach((week, matches) -> {
+            System.out.println("Week " + week);
+            matches.forEach(match -> System.out.print(match.getMatchDescription() +", "));
             System.out.println();
-        }
+        });
 
     }
 
-    public static Map<Integer, List<Match>> buildWeeklySchedule(List<Match> mainSeasonMatches, List<Team> allTeams){
+    public static Map<Integer, List<Match>> buildWeeklySchedule(List<Match> mainSeasonMatches){
         final int [] weeks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         //need to make a copy of the list so that we can call this method multiple times
         List<Match> mainSeasonMatchesIdem = new ArrayList<>(mainSeasonMatches);
@@ -92,7 +80,7 @@ public class ScheduleGenerator {
 
                 eligibleMatches.remove(firstDiv);
                 eligibleMatches.removeIf(match -> pairedTeams.contains(match.getAwayTeam()) || pairedTeams.contains(match.getHomeTeam()));
-                assert eligibleMatches.size() == 1;
+                assert eligibleMatches.size() == 1; //sanity check;
                 Match otherDiv = eligibleMatches.get(0);
                 otherDiv.setWeek(week);
                 matches.add(otherDiv);
@@ -166,10 +154,8 @@ public class ScheduleGenerator {
                 Match match;
                 if(homeGame){
                     match = new Match(team, 0, opponent);
-                    team.addHomeGame();
                 } else{
                     match = new Match(opponent, 0, team);
-                    opponent.addHomeGame();
                 }
                 team.addMatchToSchedule(match);
                 opponent.addMatchToSchedule(match);
