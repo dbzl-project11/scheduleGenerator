@@ -1,6 +1,7 @@
 package org.dbzl.schedule;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Team {
 
@@ -49,8 +50,18 @@ public class Team {
     }
 
 
-    public long getHomeGames() {
+    public long getHomeGamesCount() {
         return getSchedule().stream().filter(match -> match.getHomeTeam().getName().equals(getName())).count();
+    }
+
+    public List<Match> getHomeGames(){
+        return getSchedule().stream().filter(match -> match.getHomeTeam().getName().equals(getName())).collect(Collectors.toList());
+
+    }
+
+    public long getDivisionalHomeGamesCount(){
+        return getSchedule().stream().filter(match -> match.getHomeTeam().getName().equals(getName()) && match.isDivisionalMatch()).count();
+
     }
 
     public void addMatchToSchedule(Match match){
@@ -62,6 +73,7 @@ public class Team {
         builder.append("Schedule for: ").append(name).append('\n');
         //use the getter so it's sorted
         getSchedule().forEach(match -> builder.append(match.getFullDescription()).append('\n'));
+        builder.append("Home matches: ").append(getHomeGamesCount()).append('\n');
         return builder.toString();
     }
 
