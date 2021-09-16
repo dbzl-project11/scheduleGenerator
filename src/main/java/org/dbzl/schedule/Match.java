@@ -51,6 +51,11 @@ public class Match {
         return week + " " + getHomeTeam().getName() + " vs " + getAwayTeam().getName() + (isDivisionalMatch() ? " " + homeTeam.getDivision().getAbbreviatedName() : "");
     }
 
+    public Match flipHomeAndAway(){
+        return new Match(opposingTeam, week, homeTeam);
+    }
+
+
     @Override
     public String toString() {
         return "Match{" +

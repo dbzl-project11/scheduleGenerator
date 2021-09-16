@@ -99,7 +99,7 @@ public class HomeGameProcessor {
         List<Team> teamsWithTooManyHomeGames = allTeams.stream().filter(team -> team.getHomeGamesCount() > 8).collect(Collectors.toList());
 
         if(teamsWithTooManyHomeGames.isEmpty() && teamsWithTooFewHomeGames.isEmpty()){
-            return; // in this case, no post processing at this step because everyone is already at 7 or 8 home games.
+            return; // in this case, no post-processing at this step because everyone is already at 7 or 8 home games.
         }
 
         //step 1; start by checking the matches between the teams in the 2 lists
@@ -114,11 +114,10 @@ public class HomeGameProcessor {
                     break; // check before making any more changes because these teams are in flux;
                 }
 
-                Match currentMatch = team.getSchedule().stream().filter(match -> match.getHomeTeam().equals(opponent) || match.getHomeTeam().equals(opponent)).findFirst( ).orElse(null);
+                Match currentMatch = team.getSchedule().stream().filter(match -> match.getHomeTeam().equals(opponent) || match.getAwayTeam().equals(opponent)).findFirst( ).orElse(null);
 
                 if(currentMatch.getHomeTeam().equals(team)){
-                    Match replacementMatch = new Match(opponent, currentMatch.getWeek(), team);
-                    updateMatches(currentMatch, replacementMatch, team, opponent, mainSeasonMatches);
+                    updateMatches(currentMatch, team, opponent, mainSeasonMatches);
                 }
             }
 
@@ -139,8 +138,7 @@ public class HomeGameProcessor {
                         }
 
                         Team oldHomeTeam = game.getHomeTeam();
-                        Match newMatch = new Match(team, game.getWeek(), oldHomeTeam);
-                        updateMatches(game, newMatch, oldHomeTeam, team, mainSeasonMatches);
+                        updateMatches(game, oldHomeTeam, team, mainSeasonMatches);
 
                         if (team.getHomeGamesCount() >= 7) {
                             break; //once we get them to the minimum, don't look at any further matches;
@@ -155,8 +153,7 @@ public class HomeGameProcessor {
                         }
                         Team oldHomeTeam = game.getHomeTeam();
 
-                       Match newMatch = new Match(team, game.getWeek(), oldHomeTeam);
-                       updateMatches(game, newMatch, oldHomeTeam, team, mainSeasonMatches);
+                       updateMatches(game,  oldHomeTeam, team, mainSeasonMatches);
 
                        if (team.getHomeGamesCount() <= 8) {
                            break; //once we get them to the max, don't look at any further matches;
@@ -181,6 +178,7 @@ public class HomeGameProcessor {
                     long count8Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 8).count();
                     long count7Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 7).count();
                     if (count8Home == count7Home) {
+                        //ignore a division at 2 & 2
                         continue;
                     } else{
                         System.out.println(kai + " has " + count7Home + " with 7 home games and " + count8Home + " teams with 8 home games");
@@ -190,6 +188,7 @@ public class HomeGameProcessor {
                     count8Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 8).count();
                     count7Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 7).count();
                     if (count8Home == count7Home) {
+                         //ignore a division at 2 & 2
                         break;
                     }
                     for (Division kai2 : divisions) {
@@ -218,9 +217,51 @@ public class HomeGameProcessor {
                                 Match oldMatch = teamWith8HomeGames.getSchedule().stream().filter(match -> match.getAwayTeam().equals(teamWith7HomeGames)).findFirst().get();
                                 System.out.println("Flipping : " + oldMatch.getMatchDescription());
 
-                                Match replacementMatch = new Match(teamWith7HomeGames, oldMatch.getWeek(), teamWith8HomeGames);
-                                updateMatches(oldMatch, replacementMatch, teamWith7HomeGames, teamWith8HomeGames, mainSeasonMatches);
+                                updateMatches(oldMatch, teamWith7HomeGames, teamWith8HomeGames, mainSeasonMatches);
                                 if (teamWith8HomeGames.getHomeGamesCount() < 8) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                List<Team> teamsWith7Games = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() < 8).collect(Collectors.toList());
+                for(Team teamwith7Games : teamsWith7Games){
+                    count8Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 8).count();
+                    count7Home = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == 7).count();
+                    if (count8Home == count7Home) {
+                         //ignore a division at 2 & 2
+                        break;
+                    }
+                    for (Division kai2 : divisions) {
+
+                        if (teamwith7Games.getHomeGamesCount() > 7) {
+                            break;
+                        }
+                        List<Team> eligibleTeams = allTeams.stream().filter(team -> team.getDivision() == kai2 && team.getHomeGamesCount() > 7).collect(Collectors.toList());
+                        count8Home = allTeams.stream().filter(team -> team.getDivision() == kai2 && team.getHomeGamesCount() == 8).count();
+                        count7Home = allTeams.stream().filter(team -> team.getDivision() == kai2 && team.getHomeGamesCount() == 7).count();
+                        if (count8Home == count7Home) {
+                            System.out.println("Excluding: " + kai2 + " because it's already been equalized");
+                            continue; //exclude divisions that are at 2 & 2
+                        }
+                        if(count8Home > 2 && (kai != kai2)){
+                            continue; //can't move another home game into this division; only if necessary will this method change divisional matches
+
+                        }
+                        for (Team teamWith8HomeGames : eligibleTeams) {
+
+                            if (teamWith8HomeGames.getHomeGamesCount() > 7) {
+                                continue; //shouldn't happen, but just in case . . .
+                            }
+                            boolean matchIsHomeGame = teamWith8HomeGames.getSchedule().stream().anyMatch(match -> match.getAwayTeam().equals(teamWith8HomeGames));
+                            if (matchIsHomeGame) {
+                                Match oldMatch = teamWith8HomeGames.getSchedule().stream().filter(match -> match.getAwayTeam().equals(teamWith8HomeGames)).findFirst().get();
+                                System.out.println("Flipping : " + oldMatch.getMatchDescription());
+
+                                updateMatches(oldMatch,  teamwith7Games, teamWith8HomeGames, mainSeasonMatches);
+                                if (teamwith7Games.getHomeGamesCount() > 7) {
                                     break;
                                 }
                             }
@@ -244,7 +285,8 @@ public class HomeGameProcessor {
 //        }
     }
 
-    public static void updateMatches(Match oldMatch, Match replacementMatch, Team homeTeam, Team awayTeam, List<Match> mainSeasonMatches){
+    public static void updateMatches(Match oldMatch, Team homeTeam, Team awayTeam, List<Match> mainSeasonMatches){
+        Match replacementMatch = oldMatch.flipHomeAndAway();
         homeTeam.getSchedule().remove(oldMatch);
         awayTeam.getSchedule().remove(oldMatch);
         homeTeam.addMatchToSchedule(replacementMatch);

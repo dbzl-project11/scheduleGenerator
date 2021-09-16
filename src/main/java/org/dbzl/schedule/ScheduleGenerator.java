@@ -16,8 +16,6 @@ public class ScheduleGenerator {
     private static final List<String> westKaiTeams = List.of("Royals", "Rugrats", "Cinema", "Resurrected Warriors");
     private static final List<String> southKaiTeams = List.of("Cold", "Muscle", "Sentai", "Derp");
 
-    private static final Random rng = new Random();
-
     public static void main(String [] args){
 
         List<Team> allTeams = northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList());
@@ -64,7 +62,7 @@ public class ScheduleGenerator {
             builder.append('\n');
         });
         try{
-            Files.write(Paths.get("/home/jordan/schedule.txt"), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.write(Paths.get("./schedule.txt"), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
         } catch(Exception e){
             System.out.println("unable to write to file: " + e.getLocalizedMessage());
