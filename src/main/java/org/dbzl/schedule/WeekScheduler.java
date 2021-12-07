@@ -1,5 +1,9 @@
 package org.dbzl.schedule;
 
+import org.dbzl.domain.Division;
+import org.dbzl.domain.Match;
+import org.dbzl.domain.Team;
+
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -8,7 +12,7 @@ public class WeekScheduler {
     private static final Random rng = new Random();
 
 
-   public static Map<Integer, List<Match>> buildWeeklySchedule(List<Match> mainSeasonMatches){
+   public  Map<Integer, List<Match>> buildSchedule(List<Match> mainSeasonMatches){
         final int [] weeks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         //need to make a copy of the list so that we can call this method multiple times
         List<Match> mainSeasonMatchesIdem = new ArrayList<>(mainSeasonMatches);
@@ -70,7 +74,7 @@ public class WeekScheduler {
 
                 while(weeklyMatches.size() < 8){
 
-                    List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(teamsAlreadyPaired).collect(Collectors.toList());
+                    List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(teamsAlreadyPaired).toList();
                     if(eligibleMatches.isEmpty() && weeklyMatches.size() < 8){
                         if(clearCount < 200){ //if a given iteration is too hard, just restart from scratch
                             clearCount++;
@@ -106,5 +110,6 @@ public class WeekScheduler {
 
         return mainSeasonSchedule;
     }
+
 
 }

@@ -1,5 +1,6 @@
 package org.dbzl.schedule;
 
+import org.dbzl.domain.Division;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

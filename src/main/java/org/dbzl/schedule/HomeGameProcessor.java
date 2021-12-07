@@ -1,5 +1,9 @@
 package org.dbzl.schedule;
 
+import org.dbzl.domain.Division;
+import org.dbzl.domain.Match;
+import org.dbzl.domain.Team;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

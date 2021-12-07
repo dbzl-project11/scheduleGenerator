@@ -1,9 +1,11 @@
 package org.dbzl.schedule;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import org.dbzl.domain.Division;
+import org.dbzl.domain.Match;
+import org.dbzl.domain.Team;
+import org.dbzl.writer.MarkdownWriter;
+import org.dbzl.writer.TextWriter;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,16 +26,14 @@ public class ScheduleGenerator {
         allTeams.addAll(southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList()));
 
         List<Match> mainSeasonMatches;
-//        do {
-            System.out.println("Generating matches");
-            mainSeasonMatches = buildAllPairings(allTeams);
-//        }while(allTeams.stream().anyMatch(team -> team.getHomeGamesCount()< 7 || team.getHomeGamesCount() >8 ));
+        System.out.println("Generating matches");
+        mainSeasonMatches = buildAllPairings(allTeams);
         Map<Integer, List<Match>> seasonSchedule;
-
+        WeekScheduler weekScheduler = new WeekScheduler();
         //basically - keep trying till it works. locally, it took < ~10 seconds to generate a full schedule.
         //the retry is mostly caused by the rng trying to work with the scheduling constraints.
         do{
-            seasonSchedule = WeekScheduler.buildWeeklySchedule(mainSeasonMatches);
+            seasonSchedule = weekScheduler.buildSchedule(mainSeasonMatches);
         } while(seasonSchedule.entrySet().stream().anyMatch(week -> week.getValue().size() < 8));
 
         allTeams.sort(Comparator.comparing(team -> team.getDivision().ordinal()));
@@ -51,22 +51,12 @@ public class ScheduleGenerator {
         System.out.println("South Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("South Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==7).count());
 
+        TextWriter textWriter = new TextWriter();
+        textWriter.writeToFile(seasonSchedule, allTeams, "./schedule.txt");
 
-        System.out.println("Schedule by week");
-        StringBuilder builder = new StringBuilder();
-        allTeams.forEach(team -> builder.append(team.printSchedule()));
+        MarkdownWriter markdownWriter = new MarkdownWriter();
+        markdownWriter.writeToFile(allTeams, "./scheduleMarkdown.md");
 
-        seasonSchedule.forEach((week, matches) -> {
-            builder.append("Week ").append(week).append('\n');
-            matches.forEach(match -> builder.append(match.getMatchDescription()).append(", "));
-            builder.append('\n');
-        });
-        try{
-            Files.write(Paths.get("./schedule.txt"), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-
-        } catch(Exception e){
-            System.out.println("unable to write to file: " + e.getLocalizedMessage());
-        }
 
     }
 

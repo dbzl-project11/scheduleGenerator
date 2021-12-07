@@ -1,4 +1,4 @@
-package org.dbzl.schedule;
+package org.dbzl.domain;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -8,6 +8,7 @@ public class Team {
     private String name;
     private Division division;
     private List<Match> schedule;
+    private double teamWeight;
 
     public Team(String name, Division division) {
         this.name = name;
@@ -68,6 +69,15 @@ public class Team {
         schedule.add(match);
     }
 
+
+    public double getTeamWeight() {
+        return teamWeight;
+    }
+
+    public void setTeamWeight(double teamWeight) {
+        this.teamWeight = teamWeight;
+    }
+
     public String printSchedule(){
         StringBuilder builder = new StringBuilder();
         builder.append("Schedule for: ").append(name).append('\n');
@@ -77,17 +87,28 @@ public class Team {
         return builder.toString();
     }
 
+    public int getWins(){
+        return  (int) schedule.stream().filter(match -> match.getMatchWinner().equals(this)).count();
+    }
+
+    public double getAverageWinMargin(){
+        List<Match> wins = schedule.stream().filter(match -> match.getMatchWinner().equals(this)).toList();
+        if(wins.isEmpty()){
+            return 0;
+        }
+        return wins.stream().mapToDouble(match -> match.getWinMargin()).sum()/wins.size();
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Team team = (Team) o;
-        return Objects.equals(name, team.name);
+        return teamWeight == team.teamWeight && Objects.equals(name, team.name) && division == team.division;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, division, schedule);
+        return Objects.hash(name, division);
     }
 }

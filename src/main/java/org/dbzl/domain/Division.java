@@ -1,4 +1,4 @@
-package org.dbzl.schedule;
+package org.dbzl.domain;
 
 import java.util.Arrays;
 
