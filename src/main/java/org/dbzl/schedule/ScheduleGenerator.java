@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 public class ScheduleGenerator {
 
     //to adjust for new seasons, the only thing that *should* need to be done is rearrange the teams into the right Kais
-    private static final List<String> northKaiTeams = List.of("Buujins", "Budokai", "Androids", "Hybrids");
-    private static final List<String> eastKaiTeams = List.of("Namek", "GT", "Kaiju", "Earth Defenders");
-    private static final List<String> westKaiTeams = List.of("Royals", "Rugrats", "Cinema", "Resurrected Warriors");
-    private static final List<String> southKaiTeams = List.of("Cold", "Muscle", "Sentai", "Derp");
+    private static final List<String> northKaiTeams = List.of("Buujins", "Earth Defenders", "Muscle", "Resurrected Warriors");
+    private static final List<String> eastKaiTeams = List.of("Namek", "Royals", "GT", "Cold");
+    private static final List<String> westKaiTeams = List.of("Rugrats", "Hybrids", "Budokai", "Derp");
+    private static final List<String> southKaiTeams = List.of("Androids", "Kaiju", "Sentai", "Cinema");
 
     public static void main(String [] args){
 
@@ -51,12 +51,13 @@ public class ScheduleGenerator {
         System.out.println("South Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("South Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==7).count());
 
+        seasonSchedule.forEach((week, matches) -> Collections.shuffle(matches));
         TextWriter textWriter = new TextWriter();
         textWriter.writeToFile(seasonSchedule, allTeams, "./schedule.txt");
 
         MarkdownWriter markdownWriter = new MarkdownWriter();
-        markdownWriter.writeToFile(allTeams, "./scheduleMarkdown.md");
-
+        markdownWriter.printScheduleByTeam(allTeams, "./scheduleMarkdown.md");
+        markdownWriter.printScheduleByWeek(seasonSchedule, "./scheduleByWeek.md");
 
     }
 
