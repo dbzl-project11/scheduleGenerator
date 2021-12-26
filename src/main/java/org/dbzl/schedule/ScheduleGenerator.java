@@ -20,14 +20,34 @@ public class ScheduleGenerator {
 
     public static void main(String [] args){
 
-        List<Team> allTeams = northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList());
-        allTeams.addAll(eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList()));
-        allTeams.addAll( westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList()));
-        allTeams.addAll(southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList()));
+       ScheduleGenerator self = new ScheduleGenerator();
+       self.generateSchedule(northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList()),
+               eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList()),
+               westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList()),
+               southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList()));
 
-        List<Match> mainSeasonMatches;
+    }
+
+    private void generateSchedule(List<Team> northKai, List<Team> eastKai,List<Team> westKai,List<Team> southKai){
+         List<Team> allTeams = new ArrayList<>();
+         allTeams.addAll(northKai);
+         allTeams.addAll(eastKai);
+         allTeams.addAll(westKai);
+         allTeams.addAll(southKai);
         System.out.println("Generating matches");
-        mainSeasonMatches = buildAllPairings(allTeams);
+        Map<Integer, List<Match>> seasonSchedule = buildSchedule(allTeams);
+
+        TextWriter textWriter = new TextWriter();
+        textWriter.writeToFile(seasonSchedule, allTeams, "./schedule.txt");
+
+        MarkdownWriter markdownWriter = new MarkdownWriter();
+        markdownWriter.printScheduleByTeam(allTeams, "./scheduleMarkdown.md");
+        markdownWriter.printScheduleByWeek(seasonSchedule, "./scheduleByWeek.md");
+    }
+
+    public Map<Integer, List<Match>> buildSchedule(List<Team> allTeams) {
+        List<Match> mainSeasonMatches;
+        mainSeasonMatches = MatchBuilder.buildAllPairings(allTeams);
         Map<Integer, List<Match>> seasonSchedule;
         WeekScheduler weekScheduler = new WeekScheduler();
         //basically - keep trying till it works. locally, it took < ~10 seconds to generate a full schedule.
@@ -52,41 +72,7 @@ public class ScheduleGenerator {
         System.out.println("South Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==7).count());
 
         seasonSchedule.forEach((week, matches) -> Collections.shuffle(matches));
-        TextWriter textWriter = new TextWriter();
-        textWriter.writeToFile(seasonSchedule, allTeams, "./schedule.txt");
-
-        MarkdownWriter markdownWriter = new MarkdownWriter();
-        markdownWriter.printScheduleByTeam(allTeams, "./scheduleMarkdown.md");
-        markdownWriter.printScheduleByWeek(seasonSchedule, "./scheduleByWeek.md");
-
+        return seasonSchedule;
     }
-
-    public static List<Match> buildAllPairings(List<Team> allTeams){
-        List<Match> mainSeasonMatches = new ArrayList<>();
-        for(Team team : allTeams){
-            List<Team> remTeams = new ArrayList<>(allTeams).stream().filter(remTeam -> !remTeam.hasFoughtTeam(team.getName())).collect(Collectors.toList());
-//            Collections.shuffle(remTeams);
-            for(Team opponent : remTeams){
-                if(team.getName().equalsIgnoreCase(opponent.getName())){
-                    continue;
-                }
-                boolean homeGame = HomeGameProcessor.isHomeGame(team, opponent);
-                Match match;
-                if(homeGame){
-                    match = new Match(team, 0, opponent);
-                } else{
-                    match = new Match(opponent, 0, team);
-                }
-                team.addMatchToSchedule(match);
-                opponent.addMatchToSchedule(match);
-                mainSeasonMatches.add(match);
-            }
-
-        }
-
-        HomeGameProcessor.postProcessHomeGames(allTeams, mainSeasonMatches);
-        return mainSeasonMatches;
-    }
-
 
 }

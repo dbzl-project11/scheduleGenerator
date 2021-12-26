@@ -163,8 +163,6 @@ public class HomeGameProcessor {
                        }
                     }
                 }
-
-
             }
     }
 
@@ -176,8 +174,8 @@ public class HomeGameProcessor {
         while(divisionsNeedTuning) {
 
             for (Division kai : divisions) {
-                long count8Home = getTeamsWithXHomeGames(allTeams, 8, kai);
-                long count7Home = getTeamsWithXHomeGames(allTeams, 7, kai);
+                long count8Home = countTeamsWithXHomeGames(allTeams, 8, kai);
+                long count7Home = countTeamsWithXHomeGames(allTeams, 7, kai);
                     if (count8Home == count7Home) {
                         //ignore a division at 2 & 2
                         continue;
@@ -186,8 +184,8 @@ public class HomeGameProcessor {
                     }
                 List<Team> teamsWith8Games = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() >= 8).collect(Collectors.toList());
                 for (Team teamWith8HomeGames : teamsWith8Games) {
-                    count8Home = getTeamsWithXHomeGames(allTeams, 8, kai);
-                    count7Home = getTeamsWithXHomeGames(allTeams, 7, kai);
+                    count8Home = countTeamsWithXHomeGames(allTeams, 8, kai);
+                    count7Home = countTeamsWithXHomeGames(allTeams, 7, kai);
                     if (count8Home == count7Home) {
                          //ignore a division at 2 & 2
                         break;
@@ -198,8 +196,8 @@ public class HomeGameProcessor {
                             break;
                         }
                         List<Team> eligibleTeams = allTeams.stream().filter(team -> team.getDivision() == kai2 && team.getHomeGamesCount() < 8).collect(Collectors.toList());
-                        count8Home = getTeamsWithXHomeGames(allTeams, 8, kai2);
-                        count7Home = getTeamsWithXHomeGames(allTeams, 7, kai2);
+                        count8Home = countTeamsWithXHomeGames(allTeams, 8, kai2);
+                        count7Home = countTeamsWithXHomeGames(allTeams, 7, kai2);
                         if (count8Home == count7Home) {
                             System.out.println("Excluding: " + kai2 + " because it's already been equalized");
                             continue; //exclude divisions that are at 2 & 2
@@ -214,8 +212,8 @@ public class HomeGameProcessor {
 
                 List<Team> teamsWith7Games = allTeams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() < 8).collect(Collectors.toList());
                 for(Team teamwith7Games : teamsWith7Games){
-                    count8Home = getTeamsWithXHomeGames(allTeams, 8, kai);
-                    count7Home = getTeamsWithXHomeGames(allTeams, 7, kai);
+                    count8Home = countTeamsWithXHomeGames(allTeams, 8, kai);
+                    count7Home = countTeamsWithXHomeGames(allTeams, 7, kai);
                     if (count8Home == count7Home) {
                          //ignore a division at 2 & 2
                         break;
@@ -226,8 +224,8 @@ public class HomeGameProcessor {
                             break;
                         }
                         List<Team> teamsWithMoreHomeGames = allTeams.stream().filter(team -> team.getDivision() == kai2 && team.getHomeGamesCount() > 7).collect(Collectors.toList());
-                        count8Home = getTeamsWithXHomeGames(allTeams, 8, kai2);
-                        count7Home = getTeamsWithXHomeGames(allTeams, 7, kai2);
+                        count8Home = countTeamsWithXHomeGames(allTeams, 8, kai2);
+                        count7Home = countTeamsWithXHomeGames(allTeams, 7, kai2);
                         if (count8Home == count7Home) {
                             System.out.println("Excluding: " + kai2 + " because it's already been equalized");
                             continue; //exclude divisions that are at 2 & 2
@@ -242,8 +240,8 @@ public class HomeGameProcessor {
             }
             int finishedDivisions = 0;
             for(Division kai : divisions){
-                long count8Home = getTeamsWithXHomeGames(allTeams, 8, kai);
-                long count7Home = getTeamsWithXHomeGames(allTeams, 7, kai);
+                long count8Home = countTeamsWithXHomeGames(allTeams, 8, kai);
+                long count7Home = countTeamsWithXHomeGames(allTeams, 7, kai);
                 if (count8Home == count7Home) {
                         finishedDivisions++;
                 }
@@ -294,7 +292,7 @@ public class HomeGameProcessor {
         }
     }
 
-    static long getTeamsWithXHomeGames(List<Team> teams, int HomeGameCount, Division kai){
+    static long countTeamsWithXHomeGames(List<Team> teams, int HomeGameCount, Division kai){
         return teams.stream().filter(team -> team.getDivision() == kai && team.getHomeGamesCount() == HomeGameCount).count();
     }
 

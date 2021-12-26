@@ -13,8 +13,18 @@ import java.util.Map;
 public class MarkdownWriter {
 
 
-    public void printScheduleByWeek(Map<Integer, List<Match>> seasonSchedule, String filePath){
-        System.out.println("Writing schedule to plain text file.");
+    public void printScheduleByWeek(Map<Integer, List<Match>> seasonSchedule, String filePath) {
+        String schedule = buildScheduleByWeek(seasonSchedule);
+        try{
+            Files.write(Paths.get(filePath), schedule.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+
+        } catch(Exception e){
+            System.out.println("unable to write to file: " + e.getLocalizedMessage());
+        }
+    }
+
+    public String buildScheduleByWeek(Map<Integer, List<Match>> seasonSchedule){
+        System.out.println("Writing schedule by week to markdown file.");
         StringBuilder builder = new StringBuilder();
 
         seasonSchedule.forEach((week, matches) -> {
@@ -24,34 +34,35 @@ public class MarkdownWriter {
             builder.append('\n');
 
         });
-        try{
-            Files.write(Paths.get(filePath), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+        return builder.toString();
+    }
+
+
+    public void printScheduleByTeam(List<Team> allTeams, String filePath){
+        String schedule = buildScheduleByTeam(allTeams);
+         try{
+            Files.write(Paths.get(filePath), schedule.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
         } catch(Exception e){
             System.out.println("unable to write to file: " + e.getLocalizedMessage());
         }
     }
 
-    public void printScheduleByTeam(List<Team> allTeams, String filePath){
-        System.out.println("Printing team schedule for site.");
+    public String buildScheduleByTeam(List<Team> allTeams){
+        System.out.println("Printing team schedule");
         StringBuilder builder = new StringBuilder();
 
         allTeams.forEach(team -> {
             builder.append("### ").append(team.getName()).append("\n\n");
-            builder.append(getScheduleHeader());
+            builder.append(getTeamScheduleHeader());
             builder.append(getScheduleMarkdown(team));
             builder.append('\n');
         });
 
-        try{
-            Files.write(Paths.get(filePath), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-
-        } catch(Exception e){
-            System.out.println("unable to write to file: " + e.getLocalizedMessage());
-        }
+       return builder.toString();
     }
 
-    public String getScheduleHeader(){
+    public String getTeamScheduleHeader(){
         return """
                 |Match          |  Home Team            | Away Team        | 
                 | :-------------| :---------------------| :----------------| 
