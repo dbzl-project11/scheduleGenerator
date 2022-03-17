@@ -7,10 +7,7 @@ import org.dbzl.domain.Team;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,30 +19,33 @@ public class SeedGenerator {
         List<String> matchLines = Files.readAllLines(Paths.get("matches.txt"));
         List<Team> teams = parseTeams(lines);
         parseMatches(teams, matchLines);
-        //set the initial team weights before calculating the Strength of schedule tie breakers.
-        for(Team team : teams){
-            double initialTeamWeight = (10 * team.getWins()) + (4* team.getAverageWinMargin());
+        //set the initial team weights before calculating the Strength of schedule tiebreakers.
+        for(Team team : teams) {
+            double initialTeamWeight = 10 * team.getWins();
             team.setTeamWeight(initialTeamWeight);
         }
-
-        //now iterate over the teams and get the schedule strength
-        for(Team team: teams){
+        for(Team team : teams){
             double scheduleStrength = 0;
             for(Match match : team.getSchedule()){
-
-                scheduleStrength += match.getMatchWinner().getTeamWeight();
+                if(match.getHomeTeam().equals(team)){
+                    scheduleStrength += match.getAwayTeam().getTeamWeight();
+                } else{
+                    scheduleStrength += match.getHomeTeam().getTeamWeight();
+                }
             }
-            team.setTeamWeight(team.getTeamWeight() + scheduleStrength);
+           team.setScheduleStrength(scheduleStrength);
         }
 
-        teams.sort(Comparator.comparingInt(Team::getWins).thenComparing(Team::getTeamWeight).reversed());
-        teams.forEach(team -> System.out.println(team.getName() + ", " + team.getWins() + ", " + team.getTeamWeight()));
+        teams.sort(Comparator.comparingInt(Team::getWins).thenComparing(Team::getTeamWeight).thenComparing(Team::getScheduleStrength).thenComparing(Team::getWinMarginTieBreaker).reversed());
+        teams.forEach(team -> System.out.println(team.getName() + ", " + team.getWins() + ", " + (team.getScheduleStrength()) + ", " + team.getWinMarginTieBreaker()));
     }
+
+
 
     public static List<Team> parseTeams(List<String> fileLines){
         List<Team> teams = new ArrayList<>();
         for(String line : fileLines){
-            teams.add(new Team(line.trim(), Division.NORTH_KAI));
+            teams.add(new Team(line.trim().toUpperCase(), Division.NORTH_KAI));
         }
 
         return teams;
@@ -56,15 +56,19 @@ public class SeedGenerator {
     public static void parseMatches(List<Team> teams, List<String> lines){
         Map<String, Team> teamsByName = teams.stream().collect(Collectors.toMap(Team::getName, Function.identity()));
         for(String line : lines){
+            if(line.isEmpty() || line.isBlank()){
+                continue;
+            }
+            System.out.println("Processing "+ line);
             String [] parts = line.split(",");
-            int week = Integer.valueOf(parts[0]);
-            Team homeTeam = teamsByName.get(parts[1].trim());
-            Team awayTeam = teamsByName.get(parts[2].trim());
+            int week = Integer.parseInt(parts[0]);
+            Team homeTeam = teamsByName.get(parts[1].trim().toUpperCase());
+            Team awayTeam = teamsByName.get(parts[2].trim().toUpperCase());
             Match match = new Match(homeTeam, week, awayTeam);
             homeTeam.addMatchToSchedule(match);
             awayTeam.addMatchToSchedule(match);
-            match.setWinningTeam(Integer.valueOf(parts[3]));
-            match.setWinMargin(Double.valueOf(parts[4]));
+            match.setWinningTeam(Integer.parseInt(parts[3]));
+            match.setWinMargin(Double.parseDouble(parts[4]));
         }
     }
 

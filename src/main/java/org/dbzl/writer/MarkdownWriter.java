@@ -3,7 +3,6 @@ package org.dbzl.writer;
 import org.dbzl.domain.Match;
 import org.dbzl.domain.Team;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -16,7 +15,7 @@ public class MarkdownWriter {
     public void printScheduleByWeek(Map<Integer, List<Match>> seasonSchedule, String filePath) {
         String schedule = buildScheduleByWeek(seasonSchedule);
         try{
-            Files.write(Paths.get(filePath), schedule.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.writeString(Paths.get(filePath), schedule, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
         } catch(Exception e){
             System.out.println("unable to write to file: " + e.getLocalizedMessage());
@@ -29,7 +28,7 @@ public class MarkdownWriter {
 
         seasonSchedule.forEach((week, matches) -> {
             builder.append("### Week ").append(week).append('\n');
-            builder.append(getScheduleWeekHeader());
+            builder.append(getScheduleWeekHeader()).append('\n');
             matches.forEach(match -> builder.append(getScheduleMarkdown(match, matches.indexOf(match)+1)));
             builder.append('\n');
 
@@ -41,7 +40,7 @@ public class MarkdownWriter {
     public void printScheduleByTeam(List<Team> allTeams, String filePath){
         String schedule = buildScheduleByTeam(allTeams);
          try{
-            Files.write(Paths.get(filePath), schedule.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.writeString(Paths.get(filePath), schedule, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
         } catch(Exception e){
             System.out.println("unable to write to file: " + e.getLocalizedMessage());
@@ -54,7 +53,7 @@ public class MarkdownWriter {
 
         allTeams.forEach(team -> {
             builder.append("### ").append(team.getName()).append("\n\n");
-            builder.append(getTeamScheduleHeader());
+            builder.append(getTeamScheduleHeader()).append('\n');
             builder.append(getScheduleMarkdown(team));
             builder.append('\n');
         });
@@ -62,18 +61,16 @@ public class MarkdownWriter {
        return builder.toString();
     }
 
-    public String getTeamScheduleHeader(){
+    private String getTeamScheduleHeader(){
         return """
-                |Match          |  Home Team            | Away Team        | 
-                | :-------------| :---------------------| :----------------| 
-                """;
+                |Match          |  Home Team            | Away Team        |
+                | :-------------| :---------------------| :----------------|""";
     }
 
-    public String getScheduleWeekHeader(){
+    private String getScheduleWeekHeader(){
         return """
-                |Match          |  Home Team            | Away Team        | Winner           | 
-                | :-------------| :---------------------| :----------------| :----------------| 
-                """;
+                |Match          |  Home Team            | Away Team        | Winner           |
+                | :-------------| :---------------------| :----------------| :----------------|""";
     }
 
 

@@ -9,6 +9,7 @@ public class Team {
     private Division division;
     private List<Match> schedule;
     private double teamWeight;
+    private double scheduleStrength;
 
     public Team(String name, Division division) {
         this.name = name;
@@ -69,9 +70,20 @@ public class Team {
         schedule.add(match);
     }
 
+    public void clearSchedule(){
+        schedule.clear();
+    }
 
     public double getTeamWeight() {
         return teamWeight;
+    }
+
+    public double getScheduleStrength() {
+        return scheduleStrength;
+    }
+
+    public void setScheduleStrength(double scheduleStrength) {
+        this.scheduleStrength = scheduleStrength;
     }
 
     public void setTeamWeight(double teamWeight) {
@@ -96,7 +108,11 @@ public class Team {
         if(wins.isEmpty()){
             return 0;
         }
-        return wins.stream().mapToDouble(match -> match.getWinMargin()).sum()/wins.size();
+        return wins.stream().mapToDouble(Match::getWinMargin).sum()/wins.size();
+    }
+
+    public double getWinMarginTieBreaker(){
+        return 4 * getAverageWinMargin();
     }
 
     @Override

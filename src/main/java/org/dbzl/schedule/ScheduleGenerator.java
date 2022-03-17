@@ -61,13 +61,13 @@ public class ScheduleGenerator {
 //        allTeams.forEach(team -> System.out.println(team.printSchedule()));
         System.out.println("North Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.NORTH_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("North Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.NORTH_KAI && team.getHomeGamesCount()==7).count());
-        System.out.println("");
+        System.out.println();
         System.out.println("East Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.EAST_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("East Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.EAST_KAI && team.getHomeGamesCount()==7).count());
-        System.out.println("");
+        System.out.println();
         System.out.println("West Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.WEST_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("West Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.WEST_KAI && team.getHomeGamesCount()==7).count());
-        System.out.println("");
+        System.out.println();
         System.out.println("South Kai teams with 8 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==8).count());
         System.out.println("South Kai teams with 7 home games: " + allTeams.stream().filter(team -> team.getDivision()== Division.SOUTH_KAI && team.getHomeGamesCount()==7).count());
 

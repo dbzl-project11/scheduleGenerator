@@ -5,14 +5,13 @@ import org.dbzl.domain.Team;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MatchBuilder {
 
     public static List<Match> buildAllPairings(List<Team> allTeams){
         List<Match> mainSeasonMatches = new ArrayList<>();
         for(Team team : allTeams){
-            List<Team> remTeams = new ArrayList<>(allTeams).stream().filter(remTeam -> !remTeam.hasFoughtTeam(team.getName())).collect(Collectors.toList());
+            List<Team> remTeams = new ArrayList<>(allTeams).stream().filter(remTeam -> !remTeam.hasFoughtTeam(team.getName())).toList();
             for(Team opponent : remTeams){
                 if(team.getName().equalsIgnoreCase(opponent.getName())){
                     continue;

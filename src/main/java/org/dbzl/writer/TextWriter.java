@@ -27,7 +27,7 @@ public class TextWriter {
             builder.append('\n');
         });
         try{
-            Files.write(Paths.get(filePath), builder.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.writeString(Paths.get(filePath), builder.toString(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
         } catch(Exception e){
             System.out.println("unable to write to file: " + e.getLocalizedMessage());
