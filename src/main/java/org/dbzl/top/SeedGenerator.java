@@ -20,6 +20,12 @@ public class SeedGenerator {
         List<Team> teams = parseTeams(lines);
         parseMatches(teams, matchLines);
         //set the initial team weights before calculating the Strength of schedule tiebreakers.
+        calculateTeamStrenth(teams);
+        teams.sort(Comparator.comparingInt(Team::getWins).thenComparing(Team::getTeamWeight).thenComparing(Team::getScheduleStrength).thenComparing(Team::getWinMarginTieBreaker).reversed());
+        teams.forEach(team -> System.out.println(team.getName() + ", " + team.getWins() + ", " + (team.getScheduleStrength()) + ", " + team.getWinMarginTieBreaker()));
+    }
+
+    public static void calculateTeamStrenth(List<Team> teams){
         for(Team team : teams) {
             double initialTeamWeight = 10 * team.getWins();
             team.setTeamWeight(initialTeamWeight);
@@ -36,11 +42,7 @@ public class SeedGenerator {
            team.setScheduleStrength(scheduleStrength);
         }
 
-        teams.sort(Comparator.comparingInt(Team::getWins).thenComparing(Team::getTeamWeight).thenComparing(Team::getScheduleStrength).thenComparing(Team::getWinMarginTieBreaker).reversed());
-        teams.forEach(team -> System.out.println(team.getName() + ", " + team.getWins() + ", " + (team.getScheduleStrength()) + ", " + team.getWinMarginTieBreaker()));
     }
-
-
 
     public static List<Team> parseTeams(List<String> fileLines){
         List<Team> teams = new ArrayList<>();
