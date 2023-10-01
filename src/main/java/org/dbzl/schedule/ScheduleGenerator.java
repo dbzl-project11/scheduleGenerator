@@ -7,13 +7,12 @@ import org.dbzl.writer.MarkdownWriter;
 import org.dbzl.writer.TextWriter;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public class ScheduleGenerator {
 
     //to adjust for new seasons, the only thing that *should* need to be done is rearrange the teams into the right Kais
-    private static final List<String> northKaiTeams = List.of("Buujins", "Earth Defenders", "Muscle", "Resurrected Warriors");
+    private static final List<String> northKaiTeams = List.of("Buu Saga", "Earth Defenders", "Muscle", "Resurrected Warriors");
     private static final List<String> eastKaiTeams = List.of("Namek", "Royals", "GT", "Cold");
     private static final List<String> westKaiTeams = List.of("Rugrats", "Hybrids", "Budokai", "Derp");
     private static final List<String> southKaiTeams = List.of("Androids", "Kaiju", "Sentai", "Cinema");
@@ -21,10 +20,10 @@ public class ScheduleGenerator {
     public static void main(String [] args){
 
        ScheduleGenerator self = new ScheduleGenerator();
-       self.generateSchedule(northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).collect(Collectors.toList()),
-               eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).collect(Collectors.toList()),
-               westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).collect(Collectors.toList()),
-               southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).collect(Collectors.toList()));
+       self.generateSchedule(northKaiTeams.stream().map(team -> new Team(team, Division.NORTH_KAI)).toList(),
+               eastKaiTeams.stream().map(team -> new Team(team, Division.EAST_KAI)).toList(),
+               westKaiTeams.stream().map(team -> new Team(team, Division.WEST_KAI)).toList(),
+               southKaiTeams.stream().map(team -> new Team(team, Division.SOUTH_KAI)).toList());
 
     }
 
