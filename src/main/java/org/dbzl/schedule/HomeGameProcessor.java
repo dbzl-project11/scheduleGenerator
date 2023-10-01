@@ -21,28 +21,7 @@ public class HomeGameProcessor {
 
         //handle divisional checks
         if(team.getDivision() == opponent.getDivision()){
-            long team1DivisionalHomeGames = team.getDivisionalHomeGamesCount();
-            long team2DivisionalHomeGames = opponent.getDivisionalHomeGamesCount();
-
-            if(team1CanHaveHomeGame && team2CanHaveHomeGame) {
-
-                if(team1DivisionalHomeGames == team2DivisionalHomeGames){
-                    return rng.nextBoolean();
-                } else if(team2DivisionalHomeGames ==2){
-                    return true;
-                } else if(team1DivisionalHomeGames ==2){
-                    return false;
-                }
-
-                return team1DivisionalHomeGames < team2DivisionalHomeGames;//prefer whoever has the fewest divisional home games
-            }
-            //prioritize having 7 or 8 home games above having home map for divisional matches
-            if(team1CanHaveHomeGame){
-                return true;
-            } else if(team2CanHaveHomeGame){
-                return false;
-            }
-            return team1DivisionalHomeGames < team2DivisionalHomeGames;
+            return calculateDivisionalHomeTeam(team, opponent, team1CanHaveHomeGame, team2CanHaveHomeGame);
         }
 
 
@@ -91,6 +70,31 @@ public class HomeGameProcessor {
         return team1HomeGames < team2HomeGames; //if all else fails, prefer the team with the fewest home games
     }
 
+    private static boolean calculateDivisionalHomeTeam(Team team, Team opponent, boolean team1CanHaveHomeGame, boolean team2CanHaveHomeGame) {
+        long team1DivisionalHomeGames = team.getDivisionalHomeGamesCount();
+        long team2DivisionalHomeGames = opponent.getDivisionalHomeGamesCount();
+
+        if(team1CanHaveHomeGame && team2CanHaveHomeGame) {
+
+            if(team1DivisionalHomeGames == team2DivisionalHomeGames){
+                return rng.nextBoolean();
+            } else if(team2DivisionalHomeGames ==2){
+                return true;
+            } else if(team1DivisionalHomeGames ==2){
+                return false;
+            }
+
+            return team1DivisionalHomeGames < team2DivisionalHomeGames;
+        }
+        //prioritize having 7 or 8 home games above having home map for divisional matches
+        if(team1CanHaveHomeGame){
+            return true;
+        } else if(team2CanHaveHomeGame){
+            return false;
+        }
+        return team1DivisionalHomeGames < team2DivisionalHomeGames;
+    }
+
     public static void postProcessHomeGames(List<Team> allTeams, List<Match> mainSeasonMatches){
         postProcessDivisionals(allTeams, mainSeasonMatches);
         postProcessNormals(allTeams, mainSeasonMatches);
@@ -118,7 +122,8 @@ public class HomeGameProcessor {
                     break; // check before making any more changes because these teams are in flux;
                 }
 
-                Match currentMatch = team.getSchedule().stream().filter(match -> match.getHomeTeam().equals(opponent) || match.getAwayTeam().equals(opponent)).findFirst( ).orElse(null);
+                Match currentMatch = team.getSchedule().stream().filter(match -> match.getHomeTeam().equals(opponent) ||
+                        match.getAwayTeam().equals(opponent)).findFirst( ).orElseThrow(() ->new IllegalStateException("Can't find valid match"));
                 if(currentMatch.getHomeTeam().equals(team)){
                     updateMatches(currentMatch, team, opponent, mainSeasonMatches);
                 }
