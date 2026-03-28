@@ -5,8 +5,8 @@ import java.util.Arrays;
 public enum Division {
     NORTH_KAI("NK", 3, 7, 11),
     EAST_KAI("EK", 4, 8, 12),
-    WEST_KAI("WK", 5, 9, 13),
-    SOUTH_KAI("SK", 6, 10, 14);
+    WEST_KAI("WK", 1,5, 9),
+    SOUTH_KAI("SK", 2, 6, 10);
 
     private final String abbreviatedName;
     private final int [] divisionalWeeks;

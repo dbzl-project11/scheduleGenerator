@@ -1,114 +1,64 @@
 package org.dbzl.schedule;
 
-import org.dbzl.domain.Division;
 import org.dbzl.domain.Match;
 import org.dbzl.domain.Team;
 
 import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class WeekScheduler {
     private static final Random rng = new Random();
 
 
-   public  Map<Integer, List<Match>> buildSchedule(List<Match> mainSeasonMatches){
-        final int [] weeks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-        //need to make a copy of the list so that we can call this method multiple times
-        List<Match> mainSeasonMatchesIdem = new ArrayList<>(mainSeasonMatches);
-        Map<Integer, List<Match>> mainSeasonSchedule = new HashMap<>();
-        Predicate<Match> divisionalPredicate = Match::isDivisionalMatch;
+    public Map<Integer, List<Match>> buildShortSchedule(List<Match> mainSeasonMatches, List<Team> allTeams) {
+        if (allTeams.size() % 2 != 0) {
+            throw new IllegalStateException("Short schedule requires an even number of teams, found: " + allTeams.size());
+        }
 
-        //to make things a little easier, pair the divisionals first, as these have the most stringent constraints
-        for(int week : weeks){
-            List<Match> matches = new ArrayList<>();
-            mainSeasonSchedule.put(week, matches); //create the placeholder list here so it doesn't have to be created later
+        Map<Integer, List<Match>> seasonSchedule = new HashMap<>();
+        List<Team> rotatingTeams = new ArrayList<>(allTeams);
+        // Shuffle to vary the schedule between runs while maintaining valid round-robin structure
+        Collections.shuffle(rotatingTeams, rng);
 
-            for(Division kai : Division.values()){
-                if(!kai.isDivisionalWeek(week)){
-                    continue;
-                }
-                //first divisional week, each divisional will have 6 possible matches, then 4 (for the 2nd) then 2 in the last one)
-                List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(match -> divisionalPredicate.test(match) &&
-                        match.getHomeTeam().getDivision() == kai).collect(Collectors.toList());
-                if(eligibleMatches.size()==2){
-                    for(Match div : eligibleMatches){
-                        div.setWeek(week);
-                        matches.add(div);
-                        mainSeasonMatchesIdem.remove(div);
+        Team anchor = rotatingTeams.remove(0);
+        int numWeeks = allTeams.size() - 1;
+        int teamsInRotation = rotatingTeams.size();
 
-                    }
-                    continue;
-                }
-                List<Team> pairedTeams = new ArrayList<>();
-                Match firstDiv = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
-                firstDiv.setWeek(week);
-                matches.add(firstDiv);
-                pairedTeams.add(firstDiv.getHomeTeam());
-                pairedTeams.add(firstDiv.getAwayTeam());
+        // Implement Circle Method for Round Robin Scheduling
+        for (int week = 1; week <= numWeeks; week++) {
+            System.out.println("Building week : " + week);
+            List<Match> weeklyMatches = new ArrayList<>();
+            seasonSchedule.put(week, weeklyMatches);
 
-                eligibleMatches.remove(firstDiv);
-                eligibleMatches.removeIf(match -> pairedTeams.contains(match.getAwayTeam()) || pairedTeams.contains(match.getHomeTeam()));
-                assert eligibleMatches.size() == 1; //sanity check;
-                Match otherDiv = eligibleMatches.get(0);
-                otherDiv.setWeek(week);
-                matches.add(otherDiv);
-                mainSeasonMatchesIdem.remove(firstDiv);
-                mainSeasonMatchesIdem.remove(otherDiv);
+            // 1. Anchor plays the team at the end of the rotation
+            Team lastTeam = rotatingTeams.get(teamsInRotation - 1);
+            weeklyMatches.add(findMatch(anchor, lastTeam, mainSeasonMatches));
+
+            // 2. Pair the remaining teams
+            for (int i = 0; i < teamsInRotation / 2; i++) {
+                Team t1 = rotatingTeams.get(i);
+                Team t2 = rotatingTeams.get(teamsInRotation - 2 - i);
+                weeklyMatches.add(findMatch(t1, t2, mainSeasonMatches));
             }
+
+            // 3. Set the week for all matches
+            for (Match m : weeklyMatches) {
+                m.setWeek(week);
+            }
+
+            // 4. Rotate the list: Move last element to the front
+            Team movingTeam = rotatingTeams.remove(teamsInRotation - 1);
+            rotatingTeams.add(0, movingTeam);
         }
 
-        for(Map.Entry<Integer, List<Match>> mainSeasonWeeks : mainSeasonSchedule.entrySet()){
-                int week = mainSeasonWeeks.getKey();
-                List<Match> weeklyMatches = mainSeasonWeeks.getValue();
-//                System.out.println("Pairing matches for week: " + week);
-                List<Team> pairedTeams = new ArrayList<>();
-                if(weeklyMatches.size() > 0){
-                    for(Match match : weeklyMatches){
-                        pairedTeams.add(match.getHomeTeam());
-                        pairedTeams.add(match.getAwayTeam());
-                    }
-                }
-                int clearCount = 0;
-                Predicate<Match> teamsAlreadyPaired = match -> !(pairedTeams.contains(match.getHomeTeam()) || pairedTeams.contains(match.getAwayTeam()));
+        return seasonSchedule;
+    }
 
-                while(weeklyMatches.size() < 8){
-
-                    List<Match> eligibleMatches = mainSeasonMatchesIdem.stream().filter(teamsAlreadyPaired).toList();
-                    if(eligibleMatches.isEmpty() && weeklyMatches.size() < 8){
-                        if(clearCount < 200){ //if a given iteration is too hard, just restart from scratch
-                            clearCount++;
-                            for(Match match : weeklyMatches){
-                                if(!match.isDivisionalMatch()){
-                                    match.setWeek(0);
-                                    mainSeasonMatchesIdem.add(match);
-                                }
-                            }
-                            weeklyMatches.removeIf(match -> !match.isDivisionalMatch());
-//                            System.out.println("unable to completely assign week, restarting week");
-                            pairedTeams.clear();
-                            for(Match match : weeklyMatches){
-                                pairedTeams.add(match.getHomeTeam());
-                                pairedTeams.add(match.getAwayTeam());
-                            }
-                            continue;
-                        }
-                        System.out.println("Giving up on assigning week, reseeding");
-
-                        return mainSeasonSchedule; //return because once it fails to assign a match, the safeguards above will catch it.
-                    }
-                    Match match = eligibleMatches.get(rng.nextInt(eligibleMatches.size()));
-
-                    //cleanup after knowing the match should be assigned.
-                    match.setWeek(week);
-                    weeklyMatches.add(match);
-                    mainSeasonMatchesIdem.remove(match);
-                    pairedTeams.add(match.getHomeTeam());
-                    pairedTeams.add(match.getAwayTeam());
-                }
-        }
-
-        return mainSeasonSchedule;
+    private Match findMatch(Team t1, Team t2, List<Match> matches) {
+        return matches.stream()
+                .filter(m -> (m.getHomeTeam().equals(t1) && m.getAwayTeam().equals(t2)) ||
+                        (m.getHomeTeam().equals(t2) && m.getAwayTeam().equals(t1)))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Match not found between " + t1.getName() + " and " + t2.getName()));
     }
 
 

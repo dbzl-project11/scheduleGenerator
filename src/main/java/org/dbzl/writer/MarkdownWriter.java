@@ -75,6 +75,7 @@ public class MarkdownWriter {
 
 
     public String getScheduleMarkdown(Team team){
+        System.out.println("getting schedule markdown by team");
         StringBuilder builder = new StringBuilder(200);
         for (Match match : team.getSchedule()) {
             builder.append("|").append(match.getWeek());
@@ -90,6 +91,8 @@ public class MarkdownWriter {
 
 
     public String getScheduleMarkdown(Match match, int week){
+        System.out.println("getting schedule markdown by week");
+
         StringBuilder builder = new StringBuilder(200);
         builder.append("|").append(week);
         if(match.isDivisionalMatch()){

@@ -10,13 +10,14 @@ public class MatchBuilder {
 
     public static List<Match> buildAllPairings(List<Team> allTeams){
         List<Match> mainSeasonMatches = new ArrayList<>();
+        int totalTeams = allTeams.size();
         for(Team team : allTeams){
             List<Team> remTeams = new ArrayList<>(allTeams).stream().filter(remTeam -> !remTeam.hasFoughtTeam(team.getName())).toList();
             for(Team opponent : remTeams){
                 if(team.getName().equalsIgnoreCase(opponent.getName())){
                     continue;
                 }
-                boolean homeGame = HomeGameProcessor.isHomeGame(team, opponent);
+                boolean homeGame = HomeGameProcessor.isHomeGame(team, opponent, totalTeams);
                 Match match;
                 if(homeGame){
                     match = new Match(team, 0, opponent);
