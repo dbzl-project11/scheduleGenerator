@@ -5,6 +5,7 @@ import org.dbzl.domain.Match;
 import org.dbzl.domain.Team;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class HomeGameProcessor {
 
@@ -17,6 +18,15 @@ public class HomeGameProcessor {
 
         long team1HomeGames = team.getHomeGamesCount();
         long team2HomeGames = opponent.getHomeGamesCount();
+
+        // Divisional specific logic: prioritize balancing divisional home games
+        if (team.getDivision() == opponent.getDivision()) {
+            long team1DivisionalHome = team.getDivisionalHomeGamesCount();
+            long team2DivisionalHome = opponent.getDivisionalHomeGamesCount();
+            if (team1DivisionalHome != team2DivisionalHome) {
+                return team1DivisionalHome < team2DivisionalHome;
+            }
+        }
 
         boolean team1CanHaveHomeGame = team1HomeGames < upperBound;
         boolean team2CanHaveHomeGame = team2HomeGames < lowerBound;
@@ -68,9 +78,77 @@ public class HomeGameProcessor {
         int upperBound = totalTeams / 2;
         int lowerBound = upperBound - 1;
 
+        // 1. First ensure every team has at least one divisional home game and not all divisional home games
+        ensureDivisionalHomeGameConstraints(allTeams, mainSeasonMatches);
+
+        // 2. Proceed with general balance
         postProcessDivisionals(allTeams, mainSeasonMatches, upperBound, lowerBound);
         postProcessNormals(allTeams, mainSeasonMatches, upperBound, lowerBound);
         postProcessHomeGamesByDivision(allTeams, mainSeasonMatches, upperBound, lowerBound);
+    }
+
+    private static void ensureDivisionalHomeGameConstraints(List<Team> allTeams, List<Match> mainSeasonMatches) {
+        Map<Division, List<Team>> teamsByDivision = allTeams.stream().collect(Collectors.groupingBy(Team::getDivision));
+
+        for (List<Team> divisionTeams : teamsByDivision.values()) {
+            int maxPossibleDivisionalHome = divisionTeams.size() - 1;
+            if (maxPossibleDivisionalHome <= 0) continue;
+
+            for (Team team : divisionTeams) {
+                long divisionalHomeCount = team.getDivisionalHomeGamesCount();
+
+                // Ensure at least 1 home game
+                if (divisionalHomeCount == 0) {
+                    Match divisionalAway = team.getSchedule().stream()
+                            .filter(Match::isDivisionalMatch)
+                            .filter(m -> m.getAwayTeam().equals(team))
+                            .findFirst().orElse(null);
+                    if (divisionalAway != null) {
+                        updateMatches(divisionalAway, team, divisionalAway.getHomeTeam(), mainSeasonMatches);
+                    }
+                }
+
+                // Re-check count after potential fix above
+                divisionalHomeCount = team.getDivisionalHomeGamesCount();
+
+                // Ensure not all home games
+                if (divisionalHomeCount == maxPossibleDivisionalHome && maxPossibleDivisionalHome > 1) {
+                    Match divisionalHome = team.getSchedule().stream()
+                            .filter(Match::isDivisionalMatch)
+                            .filter(m -> m.getHomeTeam().equals(team))
+                            .findFirst().orElse(null);
+                    if (divisionalHome != null) {
+                        updateMatches(divisionalHome, divisionalHome.getAwayTeam(), team, mainSeasonMatches);
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean canFlipMatch(Match match, Team teamToReceiveHome, Team teamToLoseHome) {
+        if (!match.isDivisionalMatch()) {
+            return true;
+        }
+        
+        // If it's a divisional match, we must ensure we don't violate the "at least 1, not all" rule
+        long teamToReceiveDivHomeCount = teamToReceiveHome.getDivisionalHomeGamesCount();
+        long teamToLoseDivHomeCount = teamToLoseHome.getDivisionalHomeGamesCount();
+        
+        // We assume division sizes are consistent within the match
+        // Need to know division size to check "not all"
+        // This is a bit tricky without passing the division size or recalculating it.
+        // But we can check if it's currently at 1 and we're taking it away.
+        if (teamToLoseDivHomeCount <= 1) {
+            return false; // Can't take away the last divisional home game
+        }
+        
+        // For "not all", we can check how many divisional games they have in total
+        long totalDivGames = teamToReceiveHome.getSchedule().stream().filter(Match::isDivisionalMatch).count();
+        if (teamToReceiveDivHomeCount + 1 >= totalDivGames && totalDivGames > 1) {
+            return false; // Can't give all divisional home games
+        }
+        
+        return true;
     }
 
     public static void postProcessNormals(List<Team> allTeams, List<Match> mainSeasonMatches, int upperBound, int lowerBound){
@@ -91,7 +169,9 @@ public class HomeGameProcessor {
                         match.getAwayTeam().equals(opponent)).findFirst( ).orElse(null);
                 
                 if(currentMatch != null && currentMatch.getHomeTeam().equals(team)){
-                    updateMatches(currentMatch, team, opponent, mainSeasonMatches);
+                    if (canFlipMatch(currentMatch, opponent, team)) {
+                        updateMatches(currentMatch, team, opponent, mainSeasonMatches);
+                    }
                 }
             }
         }
@@ -105,12 +185,14 @@ public class HomeGameProcessor {
                 if (team.getHomeGamesCount() < lowerBound) {
                     List<Match> awayGames = team.getSchedule().stream().filter(match -> !match.getHomeTeam().equals(team)).toList();
                     for (Match game : awayGames) {
-                        if (game.isDivisionalMatch() || game.getAwayTeam().getHomeGamesCount() <= lowerBound) {
+                        if (game.getAwayTeam().getHomeGamesCount() <= lowerBound) {
                             continue;
                         }
 
-                        Team oldHomeTeam = game.getHomeTeam();
-                        updateMatches(game, oldHomeTeam, team, mainSeasonMatches);
+                        if (canFlipMatch(game, team, game.getHomeTeam())) {
+                            Team oldHomeTeam = game.getHomeTeam();
+                            updateMatches(game, oldHomeTeam, team, mainSeasonMatches);
+                        }
 
                         if (team.getHomeGamesCount() >= lowerBound) {
                             break;
@@ -119,11 +201,14 @@ public class HomeGameProcessor {
                 } else if (team.getHomeGamesCount() > upperBound) {
                     List<Match> homeGames = team.getSchedule().stream().filter(match -> match.getHomeTeam().equals(team)).toList();
                     for (Match game : homeGames) {
-                        if (game.isDivisionalMatch() || game.getAwayTeam().getHomeGamesCount() >= upperBound) {
+                        if (game.getAwayTeam().getHomeGamesCount() >= upperBound) {
                             continue;
                         }
-                        Team oldHomeTeam = game.getHomeTeam();
-                       updateMatches(game,  oldHomeTeam, team, mainSeasonMatches);
+                        
+                        if (canFlipMatch(game, game.getAwayTeam(), team)) {
+                            Team oldHomeTeam = game.getHomeTeam();
+                            updateMatches(game, oldHomeTeam, team, mainSeasonMatches);
+                        }
 
                        if (team.getHomeGamesCount() <= upperBound) {
                            break;
@@ -137,7 +222,6 @@ public class HomeGameProcessor {
     public static void postProcessHomeGamesByDivision(List<Team> allTeams, List<Match> mainSeasonMatches, int upperBound, int lowerBound){
         List<Division> divisions = List.of(Division.values());
         boolean divisionsNeedTuning = true;
-        System.out.println("Starting home game post-processing by division");
         
         while(divisionsNeedTuning) {
             for (Division kai : divisions) {
@@ -145,15 +229,12 @@ public class HomeGameProcessor {
                 long countLowerHome = countTeamsWithXHomeGames(allTeams, lowerBound, kai);
                 
                 if (countUpperHome > 0 && countLowerHome > 0) {
-                    // Division is mixed, considered balanced enough
                     continue;
-                } else {
-                    System.out.println(kai + " has " + countLowerHome + " with " + lowerBound + " home games and " + countUpperHome + " teams with " + upperBound + " home games");
                 }
                 
                 List<Team> teamsInDivision = allTeams.stream().filter(team -> team.getDivision() == kai).toList();
                 
-                if (countLowerHome == 0) { // All teams in division have >= upperBound home games
+                if (countLowerHome == 0) {
                     for (Team teamWithUpperHomeGames : teamsInDivision) {
                         if (teamWithUpperHomeGames.getHomeGamesCount() < upperBound) continue;
                         
@@ -164,7 +245,7 @@ public class HomeGameProcessor {
                             processLowerBoundTeams(mainSeasonMatches, teamWithUpperHomeGames, eligibleTeams, lowerBound);
                         }
                     }
-                } else if (countUpperHome == 0) { // All teams in division have <= lowerBound home games
+                } else if (countUpperHome == 0) {
                     for (Team teamWithLowerHomeGames : teamsInDivision) {
                         if (teamWithLowerHomeGames.getHomeGamesCount() > lowerBound) continue;
                         
@@ -180,7 +261,6 @@ public class HomeGameProcessor {
 
             divisionsNeedTuning = allTeams.stream().anyMatch(team -> team.getHomeGamesCount() > upperBound || team.getHomeGamesCount() < lowerBound);
         }
-        System.out.println("Finished process home games");
     }
 
     private static void processUpperBoundTeams(List<Match> mainSeasonMatches, Team teamWithLowerHomeGames, List<Team> eligibleTeams, int upperBound) {
@@ -191,8 +271,9 @@ public class HomeGameProcessor {
             Optional<Match> oldMatchOpt = teamWithUpperHomeGames.getSchedule().stream().filter(match -> match.getHomeTeam().equals(teamWithUpperHomeGames) && match.getAwayTeam().equals(teamWithLowerHomeGames)).findFirst();
             if (oldMatchOpt.isPresent()) {
                 Match oldMatch = oldMatchOpt.get();
-                System.out.println("Flipping: " + oldMatch.getMatchDescription() + " to balance divisions.");
-                updateMatches(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames, mainSeasonMatches);
+                if (canFlipMatch(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames)) {
+                    updateMatches(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames, mainSeasonMatches);
+                }
                 if (teamWithLowerHomeGames.getHomeGamesCount() >= upperBound) {
                     break;
                 }
@@ -208,8 +289,9 @@ public class HomeGameProcessor {
             Optional<Match> oldMatchOpt = teamWithUpperHomeGames.getSchedule().stream().filter(match -> match.getHomeTeam().equals(teamWithUpperHomeGames) && match.getAwayTeam().equals(teamWithLowerHomeGames)).findFirst();
             if (oldMatchOpt.isPresent()) {
                 Match oldMatch = oldMatchOpt.get();
-                System.out.println("Flipping: " + oldMatch.getMatchDescription() + " to balance divisions.");
-                updateMatches(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames, mainSeasonMatches);
+                if (canFlipMatch(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames)) {
+                    updateMatches(oldMatch, teamWithLowerHomeGames, teamWithUpperHomeGames, mainSeasonMatches);
+                }
                 if (teamWithUpperHomeGames.getHomeGamesCount() <= lowerBound) {
                     break;
                 }
